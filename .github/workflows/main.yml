@@ -1,10 +1,4 @@
-is workflow runs automatically on any pull request to any branch.
-
-yaml
-Copy
-Edit
 name: Hello World Workflow
-
 on:
   pull_request:  # Triggers on every PR (opened, updated, reopened)
     types: [opened, synchronize, reopened]
