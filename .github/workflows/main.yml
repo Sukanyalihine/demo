@@ -1,0 +1,28 @@
+is workflow runs automatically on any pull request to any branch.
+
+yaml
+Copy
+Edit
+name: Hello World Workflow
+
+on:
+  pull_request:  # Triggers on every PR (opened, updated, reopened)
+    types: [opened, synchronize, reopened]
+
+jobs:
+  hello-world:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print Hello World
+        run: echo "Hello, World!"
+
+      - name: Get PR Number and Branch Name
+        run: |
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          echo "BRANCH_NAME=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+
+      - name: Show Extracted Details
+        run: |
+          echo "Pull Request Number: $PR_NUMBER"
+          echo "Source Branch Name: $BRANCH_NAME"
