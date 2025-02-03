@@ -20,3 +20,9 @@ jobs:
         run: |
           echo "Pull Request Number: $PR_NUMBER"
           echo "Source Branch Name: $BRANCH_NAME"
+          
+      - name: Make API Call Using PR Number
+        run: |
+          curl -X GET "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}" \
+          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json"
