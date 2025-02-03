@@ -14,9 +14,15 @@ jobs:
 
       - name: Get PR Number and Branch Name
         run: |
-          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          echo "BRANCH_NAME=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
-
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "Triggered by a Pull Request"
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "BRANCH_NAME=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+          else
+            echo "Triggered manually or by push"
+            echo "PR_NUMBER=none" >> $GITHUB_ENV
+            echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+            
       - name: Show Extracted Details
         run: |
           echo "Pull Request Number: $PR_NUMBER"
