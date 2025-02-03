@@ -1,7 +1,8 @@
 name: Hello World Workflow
 on:
   pull_request:  # Triggers on every PR (opened, updated, reopened) testing12
-    types: [opened, synchronize, reopened]
+    #types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   hello-world:
