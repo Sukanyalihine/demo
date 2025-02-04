@@ -39,7 +39,10 @@ jobs:
             echo "Unknown target branch. Defaulting to qg3."
             echo "QUALITY_GATE=qg3" >> $GITHUB_ENV
           fi
+            echo "Setting default language: python"
+            echo "CODEQL_LANGUAGES=python" >> $GITHUB_ENV
 
+          
       - name: Set Parameters for Manual Trigger
         if: github.event_name == 'workflow_dispatch'
         run: |
