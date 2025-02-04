@@ -1,36 +1,71 @@
-name: Hello World Workflow
+name: Fetch CodeQL Report
+
 on:
-  pull_request:  # Triggers on every PR (opened, updated, reopened) testing123
-    #types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      QUALITY_GATE:
+        description: "Quality Gate Level (e.g., qg2, qg3)"
+        required: true
+      CODEQL_LANGUAGES:
+        description: "Languages for CodeQL (e.g., python, javascript)"
+        required: true
+  pull_request:
+    branches:
+      - main
+      - 'release/*'
+      - develop
 
 jobs:
-  hello-world:
+  codeql:
     runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || 'none' }}
+      COMMIT_SHA: ${{ github.sha }}
+      TARGET_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
 
     steps:
-      - name: Print Hello World
-        run: echo "Hello, World!"
+      - name: Set Quality Gate for PR Trigger
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "PR detected. Target branch: $TARGET_BRANCH"
 
-      - name: Get PR Number and Branch Name
+          if [[ "$TARGET_BRANCH" == "main" ]]; then
+            echo "Using quality gate: qg3"
+            echo "QUALITY_GATE=qg3" >> $GITHUB_ENV
+          elif [[ "$TARGET_BRANCH" == "develop" || "$TARGET_BRANCH" == release/* ]]; then
+            echo "Using quality gate: qg2"
+            echo "QUALITY_GATE=qg2" >> $GITHUB_ENV
+          else
+            echo "Unknown target branch. Defaulting to qg3."
+            echo "QUALITY_GATE=qg3" >> $GITHUB_ENV
+          fi
+
+      - name: Set Parameters for Manual Trigger
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Manual trigger detected. Using user-provided values."
+          echo "QUALITY_GATE=${{ inputs.QUALITY_GATE }}" >> $GITHUB_ENV
+          echo "CODEQL_LANGUAGES=${{ inputs.CODEQL_LANGUAGES }}" >> $GITHUB_ENV
+
+      - name: Debug Output
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "PR_NUMBER: $PR_NUMBER"
+          echo "COMMIT_SHA: $COMMIT_SHA"
+          echo "TARGET_BRANCH: $TARGET_BRANCH"
+          echo "QUALITY_GATE: $QUALITY_GATE"
+          echo "CODEQL_LANGUAGES: $CODEQL_LANGUAGES"
+
+      - name: Fetch CodeQL Report
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "Triggered by a Pull Request"
-            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-            echo "BRANCH_NAME=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+            echo "Fetching CodeQL report for PR number $PR_NUMBER"
+            curl -X GET "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/check-runs" \
+              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" > codeql_report.json
           else
-            echo "Triggered manually or by push"
-            echo "PR_NUMBER=none" >> $GITHUB_ENV
-            echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+            echo "Fetching CodeQL report for commit SHA $COMMIT_SHA"
+            curl -X GET "https://api.github.com/repos/${{ github.repository }}/commits/${{ env.COMMIT_SHA }}/check-runs" \
+              -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" > codeql_report.json
           fi
-          
-      - name: Show Extracted Details
-        run: |
-          echo "Pull Request Number: $PR_NUMBER"
-          echo "Source Branch Name: $BRANCH_NAME"
-          
-      - name: Make API Call Using PR Number
-        run: |
-          curl -X GET "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}" \
-          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json"
